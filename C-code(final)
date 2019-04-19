@@ -1,0 +1,66 @@
+# define N 2
+#define   TRUE       1
+#define   FALSE      0
+#define process0 0
+#define process1 1
+#include<stdio.h>
+#include<pthread.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+char buffer1[12] = "hello world";
+char buffer2[12] ="bye world";
+
+int fd = open("write.txt", O_RDWR | O_CREAT);
+void    BeginSynch(int Thread);
+void    EndSynch(int Thread);
+void    *process0_write(void *);
+void    *process1_write(void *);
+
+
+
+int main()
+{
+	
+	pthread_t t1; 	
+	pthread_t t2; 	
+	pthread_create(&t1,NULL,process0_write,NULL);	
+	pthread_create(&t2,NULL,process1_write,NULL);
+	pthread_join(t1,NULL);	
+	pthread_join(t2,NULL);	
+	return 0;
+}
+
+void *process0_write(void *arg)   {
+
+    	int size;
+        BeginSynch(process0);
+        size = write(fd, buffer1, strlen(buffer1));
+        printf("written on file  using process 0\n");
+        EndSynch(process0);
+
+}
+void *process1_write(void *arg)   {
+  
+    	int size;
+        BeginSynch(process1);
+        size = write(fd, buffer2, strlen(buffer2));
+        printf("written on file using  process 1\n");
+        EndSynch(process1);
+
+}
+
+
+
+int     flag[2];
+int     turn;
+
+void BeginSynch(int Thread) {
+    int    other = 1 - Thread;  
+    flag[Thread] = TRUE;
+    turn         = other;
+    while( flag[other] && (turn == other) ){}
+}
+void EndSynch(int Thread) {
+    flag[Thread] = FALSE;
+}
